@@ -25,6 +25,43 @@ PORT = int(os.getenv('PORT', 10000))  # Render автоматически дае
 # Инициализация бота
 bot = telebot.TeleBot(BOT_TOKEN)
 
+# Flask приложение для health check
+app = Flask(__name__)
+
+@app.route('/')
+@app.route('/health')
+def health():
+    return "OK", 200
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    """Endpoint для вебхуков (если перейдете на вебхуки позже)"""
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    return 'Bad request', 400
+
+# 🔥 ФУНКЦИИ НАСТРОЙКИ (ДОБАВЛЕНЫ)
+def setup_bot():
+    """Настройка бота перед запуском - удаляем webhook"""
+    logger.info("🧹 Удаляем webhook...")
+    try:
+        bot.delete_webhook()
+        logger.info("✅ Webhook удален!")
+        time.sleep(2)
+    except Exception as e:
+        logger.warning(f"⚠️ Ошибка удаления webhook: {e}")
+
+def run_bot():
+    """Запускает бота с long polling"""
+    try:
+        logger.info("🚀 Запускаем бота в polling режиме...")
+        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    except Exception as e:
+        logger.error(f"❌ Ошибка в polling: {e}")
+
 
 @dataclass
 class AuthorInfo:
@@ -351,10 +388,10 @@ def process_admin_reply(message: types.Message, user_id: int, original_msg_id: i
         bot.send_message(ADMIN_CHAT_ID, "❌ Ошибка доставки", parse_mode='Markdown')
 
 
-# Найдите в конце файла эту часть:
-
+# ЗАПУСК
 if __name__ == '__main__':
-    logger.info(f"🤖 Бот запускается...")
+    logger.info("🚀 Бот анонимных сообщений")
+    logger.info(f"🤖 Bot Token: {BOT_TOKEN[:10]}... (скрыто)")
     logger.info(f"👤 Admin ID: {ADMIN_CHAT_ID}")
     
     # Настраиваем бота (удаляем webhook)
@@ -365,7 +402,9 @@ if __name__ == '__main__':
     bot_thread.start()
     logger.info("✅ Бот запущен в фоновом потоке")
     
-    # Запускаем Flask сервер - ИСПРАВЛЕНО!
-    port = int(os.environ.get("PORT", 10000))  # Берем порт из окружения или 10000
-    logger.info(f"🌐 Запускаем веб-сервер на порту {port}")
-    app.run(host='0.0.0.0', port=port)  # ВАЖНО: host='0.0.0.0', а не '127.0.0.1'
+    # Запускаем Flask сервер для health check
+    port = int(os.environ.get("PORT", 10000))
+    logger.info(f"🌐 Запускаем веб-сервер на 0.0.0.0:{port}")
+    
+    # Важно: host='0.0.0.0' для доступа извне
+    app.run(host='0.0.0.0', port=port, debug=False)
