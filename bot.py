@@ -5,7 +5,10 @@ from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 import functools
+import time
 import os
+from flask import Flask, request
+import threading
 
 # Настройка логирования
 logging.basicConfig(
@@ -14,9 +17,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Константы (можно загружать из переменных окружения)
+# Константы из переменных окружения (для безопасности)
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8467159055:AAHfaxhKryC3dXNOPAUYQrqzoRSk1jYbHc8')
 ADMIN_CHAT_ID = int(os.getenv('ADMIN_CHAT_ID', '1399863475'))
+PORT = int(os.getenv('PORT', 10000))  # Render автоматически дает порт
 
 # Инициализация бота
 bot = telebot.TeleBot(BOT_TOKEN)
