@@ -351,12 +351,21 @@ def process_admin_reply(message: types.Message, user_id: int, original_msg_id: i
         bot.send_message(ADMIN_CHAT_ID, "❌ Ошибка доставки", parse_mode='Markdown')
 
 
-# Запуск
-if __name__ == '__main__':
-    logger.info("🚀 Бот запущен")
-    logger.info(f"👤 Admin ID: {ADMIN_CHAT_ID}")
+# Найдите в конце файла эту часть:
 
-    try:
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
-    except Exception as e:
-        logger.error(f"Критическая ошибка: {e}")
+if __name__ == '__main__':
+    logger.info(f"🤖 Бот запускается...")
+    logger.info(f"👤 Admin ID: {ADMIN_CHAT_ID}")
+    
+    # Настраиваем бота (удаляем webhook)
+    setup_bot()
+    
+    # Запускаем бота в отдельном потоке
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    logger.info("✅ Бот запущен в фоновом потоке")
+    
+    # Запускаем Flask сервер - ИСПРАВЛЕНО!
+    port = int(os.environ.get("PORT", 10000))  # Берем порт из окружения или 10000
+    logger.info(f"🌐 Запускаем веб-сервер на порту {port}")
+    app.run(host='0.0.0.0', port=port)  # ВАЖНО: host='0.0.0.0', а не '127.0.0.1'
